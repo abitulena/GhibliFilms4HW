@@ -15,10 +15,18 @@ interface FilmDao {
     @Query("SELECT * FROM films WHERE id = :id")
     suspend fun getFilmById(id: String): Film?
 
+    @Query("SELECT * FROM films WHERE isFavorite = 1")
+    fun getFavoriteFilms(): Flow<List<Film>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFilms(films: List<Film>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFilm(film: Film)
 
     @Query("UPDATE films SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavoriteStatus(id: String, isFavorite: Boolean)
 
+    @Query("DELETE FROM films")
+    suspend fun clearAll()
 }
