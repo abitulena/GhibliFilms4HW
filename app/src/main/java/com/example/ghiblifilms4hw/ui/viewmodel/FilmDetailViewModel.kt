@@ -22,20 +22,30 @@ class FilmDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<FilmDetailUiState>(FilmDetailUiState.Loading)
     val uiState: StateFlow<FilmDetailUiState> = _uiState
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     init {
         loadFilmDetail()
     }
 
     fun loadFilmDetail() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.value = FilmDetailUiState.Loading
+
             val filmFromDb = repository.getFilmById(filmId)
             if (filmFromDb != null) {
                 _uiState.value = FilmDetailUiState.Success(filmFromDb)
             } else {
                 val filmFromApi = repository.getFilmFromApiById(filmId)
                 if (filmFromApi != null) {
-                    _uiState.value = FilmDetailUiState.Success(filmFromApi)
+                    repository.saveFilmToCache(filmFromApi)
+                    val savedFilm = repository.getFilmById(filmId)
+                    if (savedFilm != null) {
+                        _uiState.value = FilmDetailUiState.Success(savedFilm)
+                    } else {
+                        _uiState.value = FilmDetailUiState.Error("Failed to save film")
+                    }
                 } else {
                     _uiState.value = FilmDetailUiState.Error("Film not found")
                 }
@@ -51,5 +61,10 @@ class FilmDetailViewModel @Inject constructor(
                 _uiState.value = FilmDetailUiState.Success(updatedFilm)
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadJob?.cancel()
     }
 }
