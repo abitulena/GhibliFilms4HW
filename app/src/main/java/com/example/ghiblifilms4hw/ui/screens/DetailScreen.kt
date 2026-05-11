@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
@@ -25,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +37,6 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.ghiblifilms4hw.ui.state.FilmDetailUiState
 import com.example.ghiblifilms4hw.ui.viewmodel.FilmDetailViewModel
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +44,7 @@ fun DetailScreen(
     navController: NavController,
     viewModel: FilmDetailViewModel = hiltViewModel()
 ) {
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -54,8 +55,8 @@ fun DetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    val film = if (uiState.value is FilmDetailUiState.Success) (uiState.value as FilmDetailUiState.Success).film else null
+                actions = {
+                    val film = if (uiState is FilmDetailUiState.Success) (uiState as FilmDetailUiState.Success).film else null
                     if (film != null) {
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
@@ -70,7 +71,7 @@ fun DetailScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            when (val state = uiState.value) {
+            when (val state = uiState) {
                 is FilmDetailUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -132,11 +133,12 @@ fun DetailScreen(
                         Text("Description:", fontWeight = FontWeight.Bold)
                         Text(film.description ?: "", softWrap = true)
                     }
-                    }
                 }
             }
         }
     }
+}
+
 @Composable
 private fun DetailRow(label: String, value: String) {
     Row(

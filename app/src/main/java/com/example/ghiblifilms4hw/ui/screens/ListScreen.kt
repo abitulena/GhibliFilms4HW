@@ -31,9 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -42,9 +39,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.ghiblifilms4hw.model.Film
 import com.example.ghiblifilms4hw.ui.state.FilmListUiState
 import com.example.ghiblifilms4hw.ui.viewmodel.FilmListViewModel
-import com.example.ghiblifilms4hw.model.Film
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,10 +49,19 @@ fun ListScreen(
     navController: NavController,
     viewModel: FilmListViewModel = hiltViewModel()
 ) {
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Studio Ghibli Films") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Studio Ghibli Films") },
+                actions = {
+                    IconButton(onClick = { navController.navigate("favourites") }) {
+                        Icon(Icons.Default.Favorite, contentDescription = "Favourites")
+                    }
+                }
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -63,7 +69,7 @@ fun ListScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            when (val state = uiState.value) {
+            when (val state = uiState) {
                 is FilmListUiState.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -87,7 +93,7 @@ fun ListScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { viewModel.loadFilms() }) {
+                            Button(onClick = { viewModel.retry() }) {
                                 Text("Retry")
                             }
                         }
@@ -129,8 +135,6 @@ private fun SuccessContent(
     onResetFilters: () -> Unit,
     onFavoriteClick: (String) -> Unit
 ) {
-    var localShowFilters by remember { mutableStateOf(uiState.showFilters) }
-
     OutlinedTextField(
         value = uiState.searchQuery,
         onValueChange = onSearchChange,
@@ -140,16 +144,13 @@ private fun SuccessContent(
     )
 
     Button(
-        onClick = {
-            localShowFilters = !localShowFilters
-            onToggleFilters()
-        },
+        onClick = onToggleFilters,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(if (localShowFilters) "Hide Filters" else "Show Filters")
+        Text(if (uiState.showFilters) "Hide Filters" else "Show Filters")
     }
 
-    if (localShowFilters) {
+    if (uiState.showFilters) {
         Column {
             Text("Filter by Director:", fontWeight = FontWeight.Medium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -231,16 +232,16 @@ private fun FilmCard(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "Director: ${film.director}",
+                    text = "Director: ${film.director ?: "Unknown"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Year: ${film.releaseDate}",
+                    text = "Year: ${film.releaseDate ?: "N/A"}",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    text = "Score: ${film.rtScore}",
+                    text = "Score: ${film.rtScore ?: "N/A"}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
