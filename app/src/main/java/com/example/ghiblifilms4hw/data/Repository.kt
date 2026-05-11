@@ -1,6 +1,7 @@
 package com.example.ghiblifilms4hw.data
 
 import com.example.ghiblifilms4hw.data.local.FilmDao
+import com.example.ghiblifilms4hw.data.remote.FilmDto
 import com.example.ghiblifilms4hw.data.remote.GhibliApiService
 import com.example.ghiblifilms4hw.model.Film
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,8 @@ class Repository @Inject constructor(
 
     fun getAllFilms(): Flow<List<Film>> = filmDao.getAllFilms()
 
+    fun getFavoriteFilms(): Flow<List<Film>> = filmDao.getFavoriteFilms()
+
     suspend fun getFilmById(id: String): Film? = filmDao.getFilmById(id)
 
     suspend fun refreshFilms(): Result<Unit> {
@@ -23,9 +26,17 @@ class Repository @Inject constructor(
             val filmsFromApi = api.getFilms()
             val existingFavorites = filmDao.getAllFilms().first().associateBy { it.id }
 
-            val filmsToInsert = filmsFromApi.map { filmFromApi ->
-                filmFromApi.copy(
-                    isFavorite = existingFavorites[filmFromApi.id]?.isFavorite ?: false
+            val filmsToInsert = filmsFromApi.map { dto ->
+                Film(
+                    id = dto.id,
+                    title = dto.title,
+                    description = dto.description,
+                    director = dto.director,
+                    producer = dto.producer,
+                    releaseDate = dto.releaseDate,
+                    rtScore = dto.rtScore,
+                    image = dto.image,
+                    isFavorite = existingFavorites[dto.id]?.isFavorite ?: false
                 )
             }
             filmDao.insertFilms(filmsToInsert)
@@ -47,7 +58,28 @@ class Repository @Inject constructor(
         }
     }
 
-    suspend fun getFilmFromApiById(id: String): Film? {
+    suspend fun saveFilmToCache(filmDto: FilmDto): Result<Unit> {
+        return try {
+            val existingFilm = filmDao.getFilmById(filmDto.id)
+            val film = Film(
+                id = filmDto.id,
+                title = filmDto.title,
+                description = filmDto.description,
+                director = filmDto.director,
+                producer = filmDto.producer,
+                releaseDate = filmDto.releaseDate,
+                rtScore = filmDto.rtScore,
+                image = filmDto.image,
+                isFavorite = existingFilm?.isFavorite ?: false
+            )
+            filmDao.insertFilm(film)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getFilmFromApiById(id: String): FilmDto? {
         return try {
             api.getFilmById(id)
         } catch (_: Exception) {
