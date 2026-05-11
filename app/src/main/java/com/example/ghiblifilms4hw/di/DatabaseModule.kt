@@ -1,6 +1,7 @@
 package com.example.ghiblifilms4hw.di
 
 import android.content.Context
+import androidx.room.Room
 import com.example.ghiblifilms4hw.data.local.FilmDao
 import com.example.ghiblifilms4hw.data.local.FilmDatabase
 import dagger.Module
@@ -17,7 +18,11 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideFilmDatabase(@ApplicationContext context: Context): FilmDatabase {
-        return FilmDatabase.getDatabase(context)
+        return Room.databaseBuilder(
+            context,
+            FilmDatabase::class.java,
+            "film_database"
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
