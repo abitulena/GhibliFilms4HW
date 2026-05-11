@@ -19,37 +19,57 @@ class FilmListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<FilmListUiState>(FilmListUiState.Loading)
     val uiState: StateFlow<FilmListUiState> = _uiState
 
+    private var dbCollectJob: kotlinx.coroutines.Job? = null
+    private var refreshJob: kotlinx.coroutines.Job? = null
+
     init {
-        loadFilms()
+        loadFilmsFromDb()
+        refreshIfNeeded()
     }
 
-    fun loadFilms() {
-        viewModelScope.launch {
-            _uiState.value = FilmListUiState.Loading
+    private fun loadFilmsFromDb() {
+        dbCollectJob?.cancel()
+        dbCollectJob = viewModelScope.launch {
+            repository.getAllFilms()
+                .catch { e ->
+                    _uiState.value = FilmListUiState.Error(e.message ?: "Database error", canRetry = true)
+                }
+                .collect { films ->
+                    val currentState = _uiState.value
+                    if (films.isEmpty() && currentState !is FilmListUiState.Error) {
+                        _uiState.value = FilmListUiState.Empty
+                    } else if (films.isNotEmpty()) {
+                        val searchQuery = if (currentState is FilmListUiState.Success) currentState.searchQuery else ""
+                        val selectedDirector = if (currentState is FilmListUiState.Success) currentState.selectedDirector else null
+                        val showFilters = if (currentState is FilmListUiState.Success) currentState.showFilters else false
+                        _uiState.value = FilmListUiState.Success(
+                            films = films,
+                            searchQuery = searchQuery,
+                            selectedDirector = selectedDirector,
+                            showFilters = showFilters
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun refreshIfNeeded() {
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
             repository.refreshFilms().fold(
-                onSuccess = {
-                    repository.getAllFilms()
-                        .catch { e ->
-                            _uiState.value = FilmListUiState.Error(e.message ?: "Unknown error")
-                        }
-                        .collect { films ->
-                            if (films.isEmpty()) {
-                                _uiState.value = FilmListUiState.Empty
-                            } else {
-                                val currentState = _uiState.value
-                                if (currentState is FilmListUiState.Success) {
-                                    _uiState.value = currentState.copy(films = films)
-                                } else {
-                                    _uiState.value = FilmListUiState.Success(films = films)
-                                }
-                            }
-                        }
-                },
+                onSuccess = { /* Данные уже обновятся через loadFilmsFromDb */ },
                 onFailure = { e ->
-                    _uiState.value = FilmListUiState.Error(e.message ?: "Failed to load films")
+                    val currentState = _uiState.value
+                    if (currentState is FilmListUiState.Empty || currentState is FilmListUiState.Loading) {
+                        _uiState.value = FilmListUiState.Error(e.message ?: "Failed to load films", canRetry = true)
+                    }
                 }
             )
         }
+    }
+
+    fun retry() {
+        refreshIfNeeded()
     }
 
     fun updateSearchQuery(query: String) {
@@ -83,12 +103,12 @@ class FilmListViewModel @Inject constructor(
     fun toggleFavorite(filmId: String) {
         viewModelScope.launch {
             repository.toggleFavorite(filmId)
-            val currentState = _uiState.value
-            if (currentState is FilmListUiState.Success) {
-                repository.getAllFilms().collect { updatedFilms ->
-                    _uiState.value = currentState.copy(films = updatedFilms)
-                }
-            }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        dbCollectJob?.cancel()
+        refreshJob?.cancel()
     }
 }
