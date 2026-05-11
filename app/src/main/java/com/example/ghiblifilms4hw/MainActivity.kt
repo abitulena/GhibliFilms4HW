@@ -13,9 +13,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.ghiblifilms4hw.ui.screens.ListScreen
 import com.example.ghiblifilms4hw.ui.screens.DetailScreen
-import com.example.ghiblifilms.ui.theme.GhibliFilmsTheme
+import com.example.ghiblifilms4hw.ui.screens.FavouritesScreen
+import com.example.ghiblifilms4hw.ui.screens.ListScreen
+import com.example.ghiblifilms4hw.ui.theme.GhibliFilmsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("list") {
                             ListScreen(navController = navController)
+                        }
+                        composable("favourites") {
+                            FavouritesScreen(navController = navController)
                         }
                         composable(
                             route = "detail/{filmId}",
