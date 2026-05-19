@@ -1,4 +1,4 @@
-package com.example.ghiblifilms.ui.theme
+package com.example.ghiblifilms4hw.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

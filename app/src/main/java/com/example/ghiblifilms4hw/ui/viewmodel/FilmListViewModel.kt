@@ -32,7 +32,7 @@ class FilmListViewModel @Inject constructor(
         dbCollectJob = viewModelScope.launch {
             repository.getAllFilms()
                 .catch { e ->
-                    _uiState.value = FilmListUiState.Error(e.message ?: "Database error", canRetry = true)
+                    _uiState.value = FilmListUiState.Error(e.message ?: "Database error")
                 }
                 .collect { films ->
                     val currentState = _uiState.value
@@ -61,7 +61,7 @@ class FilmListViewModel @Inject constructor(
                 onFailure = { e ->
                     val currentState = _uiState.value
                     if (currentState is FilmListUiState.Empty || currentState is FilmListUiState.Loading) {
-                        _uiState.value = FilmListUiState.Error(e.message ?: "Failed to load films", canRetry = true)
+                        _uiState.value = FilmListUiState.Error(e.message ?: "Failed to load films")
                     }
                 }
             )
