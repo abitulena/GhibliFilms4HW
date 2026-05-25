@@ -6,7 +6,7 @@ import com.example.ghiblifilms4hw.model.Film
 
 @Database(
     entities = [Film::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class FilmDatabase : RoomDatabase() {
