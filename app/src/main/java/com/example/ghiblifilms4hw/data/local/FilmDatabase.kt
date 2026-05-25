@@ -2,10 +2,10 @@ package com.example.ghiblifilms4hw.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.example.ghiblifilms4hw.model.Film
+import com.example.ghiblifilms4hw.model.FilmEntity
 
 @Database(
-    entities = [Film::class],
+    entities = [FilmEntity::class],
     version = 6,
     exportSchema = false
 )

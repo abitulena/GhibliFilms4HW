@@ -37,3 +37,10 @@ sealed class FilmDetailUiState {
     data class Error(val message: String) : FilmDetailUiState()
     data class Success(val film: Film) : FilmDetailUiState()
 }
+
+sealed class FavouritesUiState {
+    object Loading : FavouritesUiState()
+    object Empty : FavouritesUiState()
+    data class Success(val films: List<Film>) : FavouritesUiState()
+    data class Error(val message: String) : FavouritesUiState()
+}

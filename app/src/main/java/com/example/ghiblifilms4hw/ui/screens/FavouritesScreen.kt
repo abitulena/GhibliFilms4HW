@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.ghiblifilms4hw.model.Film
+import com.example.ghiblifilms4hw.ui.state.FavouritesUiState
 import com.example.ghiblifilms4hw.ui.viewmodel.FavouritesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,14 +47,14 @@ fun FavouritesScreen(
     navController: NavController,
     viewModel: FavouritesViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiStateValue by viewModel.uiState.collectAsStateWithLifecycle(initialValue = FavouritesUiState.Loading)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Favourites") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -65,28 +66,41 @@ fun FavouritesScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (val state = uiState) {
+            when (val state = uiStateValue) {
                 is FavouritesUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
                 is FavouritesUiState.Empty -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text("No favourite films yet")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { navController.navigate("list") }) {
-                            Text("Go to films")
+                        Text(
+                            text = "No favourite films yet",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { navController.popBackStack() }) {
+                            Text("Go back to films")
                         }
                     }
                 }
                 is FavouritesUiState.Success -> {
                     LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.films, key = { it.id }) { film ->
+                        items(
+                            items = state.films,
+                            key = { it.id }
+                        ) { film ->
                             FavouriteCard(
                                 film = film,
                                 onClick = { navController.navigate("detail/${film.id}") },
@@ -97,10 +111,15 @@ fun FavouritesScreen(
                 }
                 is FavouritesUiState.Error -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = "Error: ${state.message}",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadFavourites() }) {
                             Text("Retry")
@@ -132,10 +151,15 @@ private fun FavouriteCard(
             AsyncImage(
                 model = film.image,
                 contentDescription = film.title,
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(4.dp)
             )
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = film.title,
                     fontWeight = FontWeight.Bold,
@@ -143,11 +167,18 @@ private fun FavouriteCard(
                 )
                 Text(
                     text = "Director: ${film.director ?: "Unknown"}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = "Year: ${film.releaseDate ?: "N/A"}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Score: ${film.rtScore ?: "N/A"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -160,11 +191,4 @@ private fun FavouriteCard(
             }
         }
     }
-}
-
-sealed class FavouritesUiState {
-    object Loading : FavouritesUiState()
-    object Empty : FavouritesUiState()
-    data class Success(val films: List<Film>) : FavouritesUiState()
-    data class Error(val message: String) : FavouritesUiState()
 }

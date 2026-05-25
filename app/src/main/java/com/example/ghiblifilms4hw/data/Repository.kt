@@ -5,6 +5,7 @@ import com.example.ghiblifilms4hw.data.remote.FilmDto
 import com.example.ghiblifilms4hw.data.remote.GhibliApiService
 import com.example.ghiblifilms4hw.model.Film
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,11 +16,21 @@ class Repository @Inject constructor(
     private val filmDao: FilmDao
 ) {
 
-    fun getAllFilms(): Flow<List<Film>> = filmDao.getAllFilms()
+    fun getAllFilms(): Flow<List<Film>> {
+        return filmDao.getAllFilms().map { entities ->
+            entities.map { Film.fromEntity(it) }
+        }
+    }
 
-    fun getFavoriteFilms(): Flow<List<Film>> = filmDao.getFavoriteFilms()
+    fun getFavoriteFilms(): Flow<List<Film>> {
+        return filmDao.getFavoriteFilms().map { entities ->
+            entities.map { Film.fromEntity(it) }
+        }
+    }
 
-    suspend fun getFilmById(id: String): Film? = filmDao.getFilmById(id)
+    suspend fun getFilmById(id: String): Film? {
+        return filmDao.getFilmById(id)?.let { Film.fromEntity(it) }
+    }
 
     suspend fun refreshFilms(): Result<Unit> {
         return try {
@@ -27,17 +38,8 @@ class Repository @Inject constructor(
             val existingFavorites = filmDao.getAllFilms().first().associateBy { it.id }
 
             val filmsToInsert = filmsFromApi.map { dto ->
-                Film(
-                    id = dto.id,
-                    title = dto.title,
-                    description = dto.description,
-                    director = dto.director,
-                    producer = dto.producer,
-                    releaseDate = dto.releaseDate,
-                    rtScore = dto.rtScore,
-                    image = dto.image,
-                    isFavorite = existingFavorites[dto.id]?.isFavorite ?: false
-                )
+                val isFavorite = existingFavorites[dto.id]?.isFavorite ?: false
+                dto.toEntity(isFavorite)
             }
             filmDao.insertFilms(filmsToInsert)
             Result.success(Unit)
@@ -61,17 +63,7 @@ class Repository @Inject constructor(
     suspend fun saveFilmToCache(filmDto: FilmDto): Result<Unit> {
         return try {
             val existingFilm = filmDao.getFilmById(filmDto.id)
-            val film = Film(
-                id = filmDto.id,
-                title = filmDto.title,
-                description = filmDto.description,
-                director = filmDto.director,
-                producer = filmDto.producer,
-                releaseDate = filmDto.releaseDate,
-                rtScore = filmDto.rtScore,
-                image = filmDto.image,
-                isFavorite = existingFilm?.isFavorite ?: false
-            )
+            val film = filmDto.toEntity(existingFilm?.isFavorite ?: false)
             filmDao.insertFilm(film)
             Result.success(Unit)
         } catch (e: Exception) {

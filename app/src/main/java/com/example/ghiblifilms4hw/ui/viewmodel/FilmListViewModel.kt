@@ -57,7 +57,7 @@ class FilmListViewModel @Inject constructor(
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             repository.refreshFilms().fold(
-                onSuccess = { /* Данные уже обновятся через loadFilmsFromDb */ },
+                onSuccess = { },
                 onFailure = { e ->
                     val currentState = _uiState.value
                     if (currentState is FilmListUiState.Empty || currentState is FilmListUiState.Loading) {

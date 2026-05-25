@@ -1,14 +1,10 @@
 package com.example.ghiblifilms4hw.model
 
 import android.os.Parcelable
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Entity(tableName = "films")
 data class Film(
-    @PrimaryKey
     val id: String,
     val title: String,
     val description: String? = null,
@@ -18,4 +14,30 @@ data class Film(
     val rtScore: String? = null,
     val image: String? = null,
     val isFavorite: Boolean = false
-) : Parcelable
+) : Parcelable {
+    fun toEntity() = FilmEntity(
+        id = id,
+        title = title,
+        description = description,
+        director = director,
+        producer = producer,
+        releaseDate = releaseDate,
+        rtScore = rtScore,
+        image = image,
+        isFavorite = isFavorite
+    )
+
+    companion object {
+        fun fromEntity(entity: FilmEntity) = Film(
+            id = entity.id,
+            title = entity.title,
+            description = entity.description,
+            director = entity.director,
+            producer = entity.producer,
+            releaseDate = entity.releaseDate,
+            rtScore = entity.rtScore,
+            image = entity.image,
+            isFavorite = entity.isFavorite
+        )
+    }
+}
